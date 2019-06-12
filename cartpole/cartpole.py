@@ -2,14 +2,17 @@ import gym
 import time
 import numpy as np
 import logging
+
+from collections import Counter
+
 logging.basicConfig(level=logging.INFO)
 
-from players import Player, RandomPlayer, DecisionTreePlayer
+from players import Player, RandomPlayer, TrainedPlayer
 from interaction import Observation, Action, convert_event_sequence_to_training_set
 
 class Constants :
     training_episodes = 2000
-    testing_episodes = 200
+    testing_episodes = 2000
 
 
 def play_episode(env, player, show_viz=False, log_events=False) :
@@ -36,12 +39,11 @@ def play_episode(env, player, show_viz=False, log_events=False) :
 
         if show_viz :
             env.render()
-            #time.sleep(.1)
+            time.sleep(.1)
 
     return total_reward, logs
 
 env = gym.make("CartPole-v0")
-
 
 train_logs = []
 random_player = RandomPlayer()
@@ -56,16 +58,17 @@ logging.info("Mean reward with random player: {}".format(total_reward/Constants.
 
 training_data, training_labels = convert_event_sequence_to_training_set(train_logs)
 logging.info("Training set size: {}".format(len(training_data)))
+logging.info("Training labels distribution: {}".format(Counter(training_labels)))
 
-dt_player = DecisionTreePlayer()
-dt_player.fit(training_data, training_labels)
-logging.info("Trained DT player")
+tr_player = TrainedPlayer()
+tr_player.fit(training_data, training_labels)
+logging.info("Training of player complete")
 
 total_reward = 0.0
 for ep in range(Constants.testing_episodes) :
-    reward, event_log = play_episode(env, dt_player)
+    reward, event_log = play_episode(env, tr_player)
     total_reward += reward
 
-logging.info("Mean reward with decision tree player: {}".format(total_reward/Constants.training_episodes))
+logging.info("Mean reward with trained player: {}".format(total_reward/Constants.testing_episodes))
 
 env.close()
